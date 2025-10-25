@@ -92,6 +92,7 @@ class MarketDataFetcher:
             
             response = requests.get(
                 f"{self.coingecko_base_url}/simple/price",
+                headers={'x-cg-demo-api-key': 'CG-tZbALqBV4TsWdjPwu5FhHfvR'},
                 params={
                     'ids': ','.join(coin_ids),
                     'vs_currencies': 'usd',
@@ -123,6 +124,7 @@ class MarketDataFetcher:
         try:
             response = requests.get(
                 f"{self.coingecko_base_url}/coins/{coin_id}",
+                headers={'x-cg-demo-api-key': 'CG-tZbALqBV4TsWdjPwu5FhHfvR'},
                 params={'localization': 'false', 'tickers': 'false', 'community_data': 'false'},
                 timeout=10
             )
