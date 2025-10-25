@@ -343,7 +343,7 @@ class TradingApp {
             initial_capital: parseFloat(document.getElementById('initialCapital').value)
         };
 
-        if (!data.name || !data.api_key || !data.api_url || !data.model_name) {
+        if (!data.name || !data.api_url || !data.model_name) {
             alert('请填写所有必填字段');
             return;
         }

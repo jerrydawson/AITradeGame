@@ -26,7 +26,7 @@ class Database:
             CREATE TABLE IF NOT EXISTS models (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 name TEXT NOT NULL,
-                api_key TEXT NOT NULL,
+                api_key TEXT,
                 api_url TEXT NOT NULL,
                 model_name TEXT NOT NULL,
                 initial_capital REAL DEFAULT 10000,
@@ -95,11 +95,54 @@ class Database:
         
         conn.commit()
         conn.close()
+        
+        # Run migration to make api_key optional
+        self.migrate_api_key_optional()
+    
+    def migrate_api_key_optional(self):
+        """Migrate existing database to make api_key optional"""
+        conn = self.get_connection()
+        cursor = conn.cursor()
+        
+        # Check if api_key column exists and is NOT NULL
+        cursor.execute("PRAGMA table_info(models)")
+        columns = cursor.fetchall()
+        api_key_column = next((col for col in columns if col[1] == 'api_key'), None)
+        
+        if api_key_column and api_key_column[3] == 1:  # NOT NULL constraint exists
+            # Create new table with optional api_key
+            cursor.execute('''
+                CREATE TABLE models_new (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    name TEXT NOT NULL,
+                    api_key TEXT,
+                    api_url TEXT NOT NULL,
+                    model_name TEXT NOT NULL,
+                    initial_capital REAL DEFAULT 10000,
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                )
+            ''')
+            
+            # Copy data from old table to new table
+            cursor.execute('''
+                INSERT INTO models_new (id, name, api_key, api_url, model_name, initial_capital, created_at)
+                SELECT id, name, api_key, api_url, model_name, initial_capital, created_at
+                FROM models
+            ''')
+            
+            # Drop old table and rename new table
+            cursor.execute('DROP TABLE models')
+            cursor.execute('ALTER TABLE models_new RENAME TO models')
+            
+            conn.commit()
+            print("[INFO] Database migrated: api_key field is now optional")
+        
+        conn.close()
     
     # ============ Model Management ============
     
-    def add_model(self, name: str, api_key: str, api_url: str, 
-                   model_name: str, initial_capital: float = 10000) -> int:
+    def add_model(self, name: str, api_key: str = None, api_url: str = None, 
+                   model_name: str = None, initial_capital: float = 10000) -> int:
         """Add new trading model"""
         conn = self.get_connection()
         cursor = conn.cursor()

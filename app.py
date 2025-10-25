@@ -29,9 +29,14 @@ def get_models():
 @app.route('/api/models', methods=['POST'])
 def add_model():
     data = request.json
+    
+    # Validate required fields
+    if not data.get('name') or not data.get('api_url') or not data.get('model_name'):
+        return jsonify({'error': '请填写所有必填字段'}), 400
+    
     model_id = db.add_model(
         name=data['name'],
-        api_key=data['api_key'],
+        api_key=data.get('api_key'),  # Optional field
         api_url=data['api_url'],
         model_name=data['model_name'],
         initial_capital=float(data.get('initial_capital', 100000))
@@ -39,17 +44,21 @@ def add_model():
     
     try:
         model = db.get_model(model_id)
+        # Always initialize trading engine, but AITrader will handle missing API key
         trading_engines[model_id] = TradingEngine(
             model_id=model_id,
             db=db,
             market_fetcher=market_fetcher,
             ai_trader=AITrader(
-                api_key=model['api_key'],
+                api_key=model.get('api_key'),
                 api_url=model['api_url'],
                 model_name=model['model_name']
             )
         )
-        print(f"[INFO] Model {model_id} ({data['name']}) initialized")
+        if model.get('api_key'):
+            print(f"[INFO] Model {model_id} ({data['name']}) initialized with AI trading")
+        else:
+            print(f"[INFO] Model {model_id} ({data['name']}) initialized without AI trading (no API key)")
     except Exception as e:
         print(f"[ERROR] Model {model_id} initialization failed: {e}")
     

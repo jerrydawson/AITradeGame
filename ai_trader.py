@@ -3,19 +3,39 @@ from typing import Dict
 from openai import OpenAI, APIConnectionError, APIError
 
 class AITrader:
-    def __init__(self, api_key: str, api_url: str, model_name: str):
+    def __init__(self, api_key: str = None, api_url: str = None, model_name: str = None):
         self.api_key = api_key
         self.api_url = api_url
         self.model_name = model_name
+        self.has_api_key = bool(api_key and api_url and model_name)
     
     def make_decision(self, market_state: Dict, portfolio: Dict, 
                      account_info: Dict) -> Dict:
+        # If no API key is configured, return hold decisions for all coins
+        if not self.has_api_key:
+            return self._get_default_hold_decisions(market_state)
+        
         prompt = self._build_prompt(market_state, portfolio, account_info)
         
         response = self._call_llm(prompt)
         
         decisions = self._parse_response(response)
         
+        return decisions
+    
+    def _get_default_hold_decisions(self, market_state: Dict) -> Dict:
+        """Return default hold decisions when no API key is configured"""
+        decisions = {}
+        for coin in market_state.keys():
+            decisions[coin] = {
+                "signal": "hold",
+                "quantity": 0.0,
+                "leverage": 1,
+                "profit_target": 0.0,
+                "stop_loss": 0.0,
+                "confidence": 0.0,
+                "justification": "No API key configured - holding position"
+            }
         return decisions
     
     def _build_prompt(self, market_state: Dict, portfolio: Dict, 
