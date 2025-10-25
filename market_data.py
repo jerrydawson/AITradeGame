@@ -151,6 +151,7 @@ class MarketDataFetcher:
         try:
             response = requests.get(
                 f"{self.coingecko_base_url}/coins/{coin_id}/market_chart",
+                headers={'x-cg-demo-api-key': 'CG-tZbALqBV4TsWdjPwu5FhHfvR'},
                 params={'vs_currency': 'usd', 'days': days},
                 timeout=10
             )
